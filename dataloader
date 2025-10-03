@@ -1,0 +1,20 @@
+from torch.utils.data import Dataset
+import cv2
+import torch
+
+class VideoDataset(Dataset):
+    def __init__(self, sequences, labels, transform=None):
+        self.sequences = sequences
+        self.labels = labels
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.sequences)
+
+    def __getitem__(self, idx):
+        frames = [cv2.imread(f) for f in self.sequences[idx]]
+        if self.transform:
+            frames = [self.transform(image=f)['image'] for f in frames]
+        frames = torch.stack([torch.tensor(f).permute(2,0,1).float()/255. for f in frames])
+        label = self.labels[idx]
+        return frames, label
