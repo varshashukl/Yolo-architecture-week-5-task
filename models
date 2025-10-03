@@ -1,0 +1,21 @@
+import torch.nn as nn
+import torchvision.models as models
+
+class CNNLSTM(nn.Module):
+    def __init__(self, hidden_dim: int = 256, num_classes: int = 10):
+        super().__init__()
+        resnet = models.resnet18(pretrained=True)
+        self.feature_extractor = nn.Sequential(*list(resnet.children())[:-1])
+        self.lstm = nn.LSTM(512, hidden_dim, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, num_classes)
+
+    def forward(self, x):
+        batch, seq, c, h, w = x.shape
+        features = []
+        for t in range(seq):
+            f = self.feature_extractor(x[:, t])
+            features.append(f.view(batch, -1))
+        features = torch.stack(features, dim=1)
+        _, (h_n, _) = self.lstm(features)
+        out = self.fc(h_n[-1])
+        return out
